@@ -1,3 +1,4 @@
+
 import { Movie, SearchResult } from "@/types/movie";
 import * as cheerio from "cheerio";
 import { NextRequest, NextResponse } from "next/server";
@@ -8,27 +9,28 @@ import {
   createErrorResponse,
   createHttpClient,
   dedupeMoviesByTitleHighestQuality,
-  fetchMovieDetails,
   getRandomUserAgent,
   parseMovieElement,
   processMoviesWithConcurrency,
-  withRetry
+  withRetry,
 } from "../../../utils/scraper";
+import { fetchMovieDetailsSkyBap } from "@/utils/skybap";
+import { getskyBapUrl } from "@/config";
 
-const BASE_URL = "https://skymovieshd.blue";
+
 
 // Main search function
-const searchMovies = async (query: string): Promise<Movie[]> => {
+const searchMovies = async (query: string, baseUrl: string): Promise<Movie[]> => {
   const client = createHttpClient();
 
-  const searchUrl = `${BASE_URL}/search.php?search=${encodeURIComponent(
+  const searchUrl = `${baseUrl}/search.php?search=${encodeURIComponent(
     query
   )}&cat=All`;
 
   const response = await client.get(searchUrl, {
     headers: {
       "User-Agent": getRandomUserAgent(),
-      Referer: BASE_URL,
+      Referer: baseUrl,
     },
   });
 
@@ -58,7 +60,7 @@ const searchMovies = async (query: string): Promise<Movie[]> => {
 
   // Process movies in parallel with concurrency limit
   const moviePromises = movieElements.map((element) =>
-    parseMovieElement(element, $, BASE_URL)
+    parseMovieElement(element, $, baseUrl)
   );
   const movieResults = await Promise.allSettled(moviePromises);
 
@@ -75,7 +77,8 @@ const searchMovies = async (query: string): Promise<Movie[]> => {
 
 // Enhanced movie details fetcher using utility functions
 const fetchMovieDetailsWithConcurrency = async (
-  movies: Movie[]
+  movies: Movie[],
+  baseUrl: string
 ): Promise<Movie[]> => {
   const concurrencyLimit = Math.min(
     SCRAPER_CONFIG.maxConcurrent,
@@ -90,7 +93,9 @@ const fetchMovieDetailsWithConcurrency = async (
     movies,
     async (movie: Movie) => {
       try {
-        const details = await withRetry(() => fetchMovieDetails(movie.link));
+        const details = await withRetry(() =>
+          fetchMovieDetailsSkyBap(movie.link, baseUrl)
+        );
 
         return {
           ...movie,
@@ -123,7 +128,7 @@ const fetchMovieDetailsWithConcurrency = async (
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
-
+  const BASE_URL = await getskyBapUrl();
   try {
     // Input validation
     const searchParams = request.nextUrl.searchParams;
@@ -160,14 +165,19 @@ export async function GET(request: NextRequest) {
     );
 
     // Perform search with retry logic
-    const movies = await withRetry(() => searchMovies(sanitizedQuery));
+    const movies = await withRetry(() =>
+      searchMovies(sanitizedQuery, BASE_URL)
+    );
 
     let enrichedMovies = movies;
 
     // Fetch details for all movies if requested
     if (includeDetails && movies.length > 0) {
       console.info(`Fetching details for ${movies.length} movies...`);
-      enrichedMovies = await fetchMovieDetailsWithConcurrency(movies);
+      enrichedMovies = await fetchMovieDetailsWithConcurrency(
+        movies,
+        BASE_URL
+      );
     }
 
     // Deduplicate by title, keep highest quality
