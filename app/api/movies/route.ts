@@ -1,10 +1,14 @@
-import { getskyBapUrl } from "@/config";
+import { FILMY_WAP_URL, getskyBapUrl } from "@/config";
 import { Movie } from "@/types/movie";
 import {
   createErrorResponse,
   dedupeMoviesByTitleHighestQuality,
   withRetry,
 } from "@/utils/scraper";
+import {
+  fetchMovieDetailsWithConcurrencyFilmyWap,
+  scrapeLatestMoviesFilmyWap,
+} from "@/utils/filmywap";
 import {
   fetchMovieDetailsWithConcurrencySkyBap,
   scrapeLatestMoviesSkyBap,
@@ -14,7 +18,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
-  const BASE_URL = await getskyBapUrl();
+  const SKYBAP_URL = await getskyBapUrl();
 
   try {
     // Input validation
@@ -23,7 +27,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type"); // "popular", "latest", or both (default)
 
     console.info(
-      `Starting homepage scrape (details: ${includeDetails}, type: ${
+      `[API] Starting homepage scrape (details: ${includeDetails}, type: ${
         type || "both"
       })`
     );
@@ -31,34 +35,50 @@ export async function GET(request: NextRequest) {
     let popularMovies: Movie[] = [];
     let latestMovies: Movie[] = [];
 
-    // Scrape based on type parameter
+    // Scrape SkyBap
     if (!type || type === "both" || type === "popular") {
-      console.info("Scraping popular movies...");
+      console.info("[SkyBap] Scraping popular movies...");
       const popularMoviesSkyBap = await withRetry(() =>
-        scrapePopularMoviesSkyBap(BASE_URL)
+        scrapePopularMoviesSkyBap(SKYBAP_URL)
       );
       const detailedPopularMoviesSkyBap =
         await fetchMovieDetailsWithConcurrencySkyBap(
           popularMoviesSkyBap,
           "popular",
-          BASE_URL
+          SKYBAP_URL
         );
 
       popularMovies = [...detailedPopularMoviesSkyBap];
     }
 
     if (!type || type === "both" || type === "latest") {
-      console.info("Scraping latest movies...");
+      console.info("[SkyBap] Scraping latest movies...");
       const latestMoviesSkyBap = await withRetry(() =>
-        scrapeLatestMoviesSkyBap(BASE_URL)
+        scrapeLatestMoviesSkyBap(SKYBAP_URL)
       );
       const detailedMoviesSkyBap = await fetchMovieDetailsWithConcurrencySkyBap(
         latestMoviesSkyBap,
         "latest",
-        BASE_URL
+        SKYBAP_URL
       );
 
       latestMovies = [...detailedMoviesSkyBap];
+    }
+
+    // Scrape FilmyWap
+    if (!type || type === "both" || type === "latest") {
+      console.info("[FilmyWap] Scraping latest movies...");
+      const latestMoviesFilmyWap = await withRetry(() =>
+        scrapeLatestMoviesFilmyWap(FILMY_WAP_URL)
+      );
+      const detailedMoviesFilmyWap =
+        await fetchMovieDetailsWithConcurrencyFilmyWap(
+          latestMoviesFilmyWap,
+          "latest",
+          FILMY_WAP_URL
+        );
+
+      latestMovies = [...latestMovies, ...detailedMoviesFilmyWap];
     }
 
     // Deduplicate by title, keep highest quality
@@ -69,7 +89,7 @@ export async function GET(request: NextRequest) {
     const totalMovies = popularMovies.length + latestMovies.length;
 
     console.info(
-      `Homepage scrape completed in ${processingTime}ms, found ${totalMovies} movies (${
+      `[API] Homepage scrape completed in ${processingTime}ms, found ${totalMovies} movies (${
         popularMovies.length
       } popular, ${latestMovies.length} latest)${
         includeDetails ? " with details" : ""
