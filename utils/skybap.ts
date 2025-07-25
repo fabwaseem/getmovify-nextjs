@@ -293,7 +293,6 @@ export const fetchMovieDetailsSkyBap = async (
 
   // Extract all images from <div class="L"><center><img ...></center></div>
   const images = extractMovieImages($);
-
   return {
     thumbnail,
     downloadLinks,

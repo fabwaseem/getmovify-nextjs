@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import QueryProvider from "@/components/QueryProvider";
+import ScrollToTop from "@/components/ScrollToTop";
+import Footer from "@/components/Footer";
+import HeaderWrapper from "@/components/HeaderWrapper";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -38,11 +42,6 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
     site: "@yourtwitter",
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
 };
 
 export default function RootLayout({
@@ -52,8 +51,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${plusJakartaSans.variable} font-sans  antialiased`}>
-        {children}
+      <body className={`${plusJakartaSans.variable} font-sans antialiased`}>
+        <QueryProvider>
+          <div className="min-h-screen bg-[#0f1419] text-white">
+            <HeaderWrapper />
+            <div className="flex-1 overflow-auto">
+              {children}
+            </div>
+          </div>
+        </QueryProvider>
+        <Footer />
+        <ScrollToTop />
       </body>
     </html>
   );
