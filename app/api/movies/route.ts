@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Fetch details if requested and not already fetched
-    if (includeDetails && movies.length > 0 && (search || category)) {
+    if (includeDetails && movies.length > 0) {
       console.info(`[API] Fetching details for ${movies.length} movies...`);
       movies = await fetchMovieDetailsWithConcurrency(movies, SKYBAP_URL);
     }
