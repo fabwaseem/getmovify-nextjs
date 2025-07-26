@@ -8,7 +8,7 @@ function HeaderContent() {
   const searchParams = useSearchParams();
 
   const searchQuery = searchParams.get("search") || "";
-  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  const [, setLocalSearchQuery] = useState(searchQuery);
 
   // Sync local search with URL params
   useEffect(() => {
