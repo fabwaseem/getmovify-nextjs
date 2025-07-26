@@ -55,15 +55,3 @@ export interface SearchResult {
   /** Whether there are more results available */
   hasMore?: boolean;
 }
-
-export interface CategoryResult {
-  category: string;
-  movies: Movie[];
-  total: number;
-  hasMore?: boolean;
-}
-
-export interface Category {
-  name: string;
-  slug: string;
-}

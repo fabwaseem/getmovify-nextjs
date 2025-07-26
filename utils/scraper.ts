@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 import * as cheerio from "cheerio";
-import { Movie, DownloadLink, Category } from "@/types/movie";
+import { Movie, DownloadLink } from "@/types/movie";
 
 // Configuration for optimized scraping
 export const SCRAPER_CONFIG = {
@@ -348,41 +348,6 @@ export const parseMovieElement = (
   }
 };
 
-export const parseCategoryElement = (
-  element: any,
-  $: cheerio.CheerioAPI,
-): Category | null => {
-  try {
-    const $element = $(element);
-    const $link = $element.find("a");
-
-    if ($link.length === 0) {
-      return null;
-    }
-
-    const href = $link.attr("href");
-    const rawTitle = $link.text();
-
-    if (!href || !rawTitle) {
-      return null;
-    }
-
-    const title = sanitizeText(rawTitle);
-    if (!title || title.length < 2) {
-      return null;
-    }
-
-    const categorySlug = href.replace("category/", "").replace(".html", "");
-
-    return {
-      name: title,
-      slug: categorySlug,
-    };
-  } catch (error) {
-    console.warn("Error parsing category element:", error);
-    return null;
-  }
-};
 
 /**
  * Process movies with concurrency control and rate limiting

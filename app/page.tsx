@@ -1,11 +1,9 @@
 "use client";
 
-import AllCategoriesView from "@/components/AllCategoriesView";
 import MoviesGrid from "@/components/MoviesGrid";
-import { useCategories } from "@/hooks/useCategories";
 import { useInfiniteMovies } from "@/hooks/useMovies";
 import { useSearchParams } from "next/navigation";
-import { useEffect, Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { useDebounce } from "use-debounce";
 
@@ -15,14 +13,8 @@ function HomeContent() {
 
   const [debouncedQuery] = useDebounce(searchQuery, 400);
 
-  // Use hook for categories
-  const {
-    data: categories,
-  } = useCategories();
-
   // Determine current mode - homepage only shows search or all categories
-  const isSearchMode = debouncedQuery.trim() !== "";
-  const isHomepageMode = !isSearchMode;
+  const isSearchMode = debouncedQuery.trim().length >= 3;
 
   // Use infinite hook for search results only
   const {
@@ -52,40 +44,41 @@ function HomeContent() {
   const displayMovies = movieData?.pages?.flatMap((page) => page.movies) || [];
 
   return (
-    <>
-      {isHomepageMode ? (
-        /* Show all categories with first page movies */
-        <AllCategoriesView
-          categories={categories || []}
-        />
+    <div className=" px-4 py-8">
+      {isSearchMode ? (
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-white">Search Results</h1>
+          <p className="text-gray-400 mt-2">
+            Showing results for &quot;{debouncedQuery}&quot;
+          </p>
+        </div>
       ) : (
-        /* Show search results */
-        <div className=" px-4 py-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-white">
-              Search Results
-            </h1>
-            <p className="text-gray-400 mt-2">
-              Showing results for &quot;{debouncedQuery}&quot;
-            </p>
-          </div>
-          <MoviesGrid
-            movies={displayMovies}
-            isLoading={isLoading}
-            isError={isError}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            loadMoreRef={loadMoreRef}
-          />
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-white">Latest Movies</h1>
         </div>
       )}
-    </>
+
+      <MoviesGrid
+        movies={displayMovies}
+        isLoading={isLoading}
+        isError={isError}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        loadMoreRef={loadMoreRef}
+      />
+    </div>
   );
 }
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="px-4 py-8"><div className="text-white">Loading...</div></div>}>
+    <Suspense
+      fallback={
+        <div className="px-4 py-8">
+          <div className="text-white">Loading...</div>
+        </div>
+      }
+    >
       <HomeContent />
     </Suspense>
   );

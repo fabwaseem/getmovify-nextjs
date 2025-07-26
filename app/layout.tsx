@@ -4,7 +4,7 @@ import "./globals.css";
 import QueryProvider from "@/components/QueryProvider";
 import ScrollToTop from "@/components/ScrollToTop";
 import Footer from "@/components/Footer";
-import HeaderWrapper from "@/components/HeaderWrapper";
+import HeaderWrapper from "@/components/Header";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -55,9 +55,7 @@ export default function RootLayout({
         <QueryProvider>
           <div className="min-h-screen bg-[#0f1419] text-white">
             <HeaderWrapper />
-            <div className="flex-1 overflow-auto">
-              {children}
-            </div>
+            <div className="flex-1 overflow-auto">{children}</div>
           </div>
         </QueryProvider>
         <Footer />

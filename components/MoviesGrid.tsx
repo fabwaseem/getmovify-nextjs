@@ -14,7 +14,14 @@ interface MoviesGridProps {
   loadMoreRef?: (node?: Element | null) => void;
 }
 
-const MoviesGrid = ({ movies, isLoading, isError, hasNextPage, isFetchingNextPage, loadMoreRef }: MoviesGridProps) => {
+const MoviesGrid = ({
+  movies,
+  isLoading,
+  isError,
+  hasNextPage,
+  isFetchingNextPage,
+  loadMoreRef,
+}: MoviesGridProps) => {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -30,10 +37,13 @@ const MoviesGrid = ({ movies, isLoading, isError, hasNextPage, isFetchingNextPag
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="py-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="bg-[#1a1d23] rounded-xl overflow-hidden border border-gray-800 animate-pulse">
+            <div
+              key={i}
+              className="bg-[#1a1d23] rounded-xl overflow-hidden border border-gray-800 animate-pulse"
+            >
               <div className="aspect-[3/4] bg-gray-800"></div>
               <div className="p-4 space-y-3">
                 <div className="h-6 bg-gray-800 rounded"></div>
@@ -70,7 +80,9 @@ const MoviesGrid = ({ movies, isLoading, isError, hasNextPage, isFetchingNextPag
       <div className="p-6">
         <div className="text-center py-20">
           <div className="text-4xl mb-4">🎬</div>
-          <h3 className="text-xl font-semibold text-white mb-2">No movies found</h3>
+          <h3 className="text-xl font-semibold text-white mb-2">
+            No movies found
+          </h3>
           <p className="text-gray-400">Try adjusting your search or filters</p>
         </div>
       </div>
@@ -79,18 +91,16 @@ const MoviesGrid = ({ movies, isLoading, isError, hasNextPage, isFetchingNextPag
 
   return (
     <>
-      <div className="p-6">
+      <div className="py-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           {movies.map((movie, i) => (
-            <div
-              key={`movie-${movie.title}-${i}`}
-            >
+            <div key={`movie-${movie.title}-${i}`}>
               <MovieCard movie={movie} onClick={handleMovieClick} />
             </div>
           ))}
         </div>
 
-        {/* Infinite scroll sentinel for category movies */}
+        {/* Infinite scroll senti movies */}
         {hasNextPage && loadMoreRef && (
           <div ref={loadMoreRef} className="flex justify-center mt-8">
             {isFetchingNextPage && (

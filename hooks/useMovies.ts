@@ -9,7 +9,6 @@ interface MoviesResult {
 }
 
 interface UseMoviesOptions {
-  category?: string;
   search?: string;
   details?: boolean;
   infinite?: boolean;
@@ -28,10 +27,6 @@ const fetchMovies = async (
     params.set("search", options.search);
   }
 
-  // Add category
-  if (options.category) {
-    params.set("category", options.category);
-  }
 
   // Add details flag
   if (options.details === false) params.set("details", "false");

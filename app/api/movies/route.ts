@@ -66,53 +66,6 @@ const searchMoviesSkyBap = async (
   return movies;
 };
 
-// Category search function for SkyBap
-const searchCategoryMoviesSkyBap = async (
-  category: string,
-  baseUrl: string,
-  page: number = 1
-): Promise<Movie[]> => {
-  const client = createHttpClient();
-  const categoryUrl = `${baseUrl}/category/${encodeURIComponent(category)}/${page}.html`;
-
-  const response = await client.get(categoryUrl, {
-    headers: {
-      "User-Agent": getRandomUserAgent(),
-      Referer: baseUrl,
-    },
-  });
-
-  if (!response.data || typeof response.data !== "string") {
-    throw new ScrapingError("Invalid response format received");
-  }
-
-  const $ = cheerio.load(response.data);
-  const movies: Movie[] = [];
-
-  // Find all movie divs with class "L"
-  const movieElements = $('div.L[align="left"]').toArray();
-
-  if (movieElements.length === 0) {
-    console.warn('[SkyBap] No movie elements found with selector div.L[align="left"]');
-  }
-
-  // Process movies in parallel with concurrency limit
-  const moviePromises = movieElements.map((element) =>
-    parseMovieElement(element, $, baseUrl)
-  );
-  const movieResults = await Promise.allSettled(moviePromises);
-
-  movieResults.forEach((result, index) => {
-    if (result.status === "fulfilled" && result.value) {
-      movies.push(result.value);
-    } else if (result.status === "rejected") {
-      console.warn(`[SkyBap] Failed to process movie at index ${index}:`, result.reason);
-    }
-  });
-
-  return movies;
-};
-
 // Enhanced movie details fetcher using utility functions
 const fetchMovieDetailsWithConcurrency = async (
   movies: Movie[],
@@ -163,12 +116,11 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search");
-    const category = searchParams.get("category");
     const page = Number(searchParams.get("page")) || 1;
     const includeDetails = searchParams.get("details") !== "false";
 
     console.info(
-      `[API] Request: search="${search}", category="${category}", page=${page}, details=${includeDetails}`
+      `[API] Request: search="${search}", page=${page}, details=${includeDetails}`
     );
 
     let movies: Movie[] = [];
@@ -195,36 +147,6 @@ export async function GET(request: NextRequest) {
       // Check if there are more pages for search (search typically doesn't have pagination)
       hasMore = false;
     }
-    // Handle category requests
-    else if (category && !search) {
-      if (category.length < 2) {
-        throw new ValidationError("Category must be at least 2 characters long");
-      }
-
-      const sanitizedCategory = category.trim().replace(/[<>]/g, "");
-
-      // Calculate actual pages to scrape: for page 1 -> scrape 1,2; for page 2 -> scrape 3,4; etc.
-      const firstPage = (page - 1) * 2 + 1;
-      const secondPage = firstPage + 1;
-      const checkPage = secondPage + 1; // Page to check if there are more results
-
-      console.info(`[API] Fetching category: "${sanitizedCategory}", scraping pages: ${firstPage}, ${secondPage}`);
-
-      const [firstPageMovies, secondPageMovies, checkPageMovies] = await Promise.all([
-        withRetry(() => searchCategoryMoviesSkyBap(sanitizedCategory, SKYBAP_URL, firstPage)),
-        withRetry(() => searchCategoryMoviesSkyBap(sanitizedCategory, SKYBAP_URL, secondPage)),
-        withRetry(() => searchCategoryMoviesSkyBap(sanitizedCategory, SKYBAP_URL, checkPage)),
-      ]);
-
-      // Combine movies from both pages
-      movies = [...firstPageMovies, ...secondPageMovies];
-
-      // Check if there are more pages available
-      hasMore = checkPageMovies.length > 0;
-
-      console.info(`[API] Found ${firstPageMovies.length} movies on page ${firstPage}, ${secondPageMovies.length} movies on page ${secondPage}, hasMore: ${hasMore}`);
-    }
-    // Handle homepage requests (popular/latest)
     else {
       let popularMovies: Movie[] = [];
       let latestMovies: Movie[] = [];
